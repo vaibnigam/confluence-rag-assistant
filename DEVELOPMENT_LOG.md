@@ -127,12 +127,42 @@ This document tracks the incremental development of the Confluence Knowledge Ass
 
 ---
 
-## Next Steps (Planned)
+### Step 6: Minimal Confluence Integration ✅
 
-### Step 6: Minimal Confluence Integration
-- Add Confluence REST API client
-- Create configuration properties for Confluence credentials
-- Add endpoint to fetch a single Confluence page
+**Goal:** Fetch content from a single Confluence page using the Confluence REST API and expose it via a REST endpoint.
+
+**What was added:**
+- `ConfluenceProperties` (config layer): `@ConfigurationProperties(prefix = "confluence")` for base URL, page ID, username, and API token
+- `ConfluenceConfig` (config layer): Provides `RestTemplate` bean for HTTP calls to Confluence
+- `ConfluenceClient` (util layer): REST API client that:
+  - Builds Confluence REST API URL for the configured page ID
+  - Uses Basic Auth (username + API token)
+  - Fetches page content with `expand=body.storage,version`
+  - Extracts the storage body content
+- `ConfluenceService` (service layer): Wraps `ConfluenceClient` and provides basic HTML tag cleanup
+- `ConfluenceController` (controller layer): `GET /confluence/page` endpoint that returns page content
+- Confluence properties in `application.properties` with placeholders for environment variables
+
+**Files created:**
+- `src/main/java/com/example/knowledge/RAGassistant/config/ConfluenceProperties.java`
+- `src/main/java/com/example/knowledge/RAGassistant/config/ConfluenceConfig.java`
+- `src/main/java/com/example/knowledge/RAGassistant/util/ConfluenceClient.java`
+- `src/main/java/com/example/knowledge/RAGassistant/service/ConfluenceService.java`
+- `src/main/java/com/example/knowledge/RAGassistant/controller/ConfluenceController.java`
+- `src/main/resources/application.properties` (added confluence.* properties)
+
+**Configuration:**
+Set these environment variables or update `application.properties`:
+- `CONFLUENCE_BASE_URL` (e.g., `https://your-domain.atlassian.net`)
+- `CONFLUENCE_PAGE_ID` (the Confluence page ID to fetch)
+- `CONFLUENCE_USERNAME` (your Confluence username/email)
+- `CONFLUENCE_API_TOKEN` (Confluence API token - create at https://id.atlassian.com/manage-profile/security/api-tokens)
+
+**Test:** `GET http://localhost:8080/confluence/page` returns the content of the configured Confluence page.
+
+---
+
+## Next Steps (Planned)
 
 ### Step 7: OpenAI Integration & Embeddings
 - Add OpenAI client for embeddings
@@ -153,11 +183,18 @@ src/main/java/com/example/knowledge/RAGassistant/
 ├── RaGassistantApplication.java          # Main Spring Boot application
 ├── controller/
 │   ├── HealthController.java             # Health check endpoint
-│   └── ConfluencePageChunkController.java # Sample chunks endpoint
+│   ├── ConfluencePageChunkController.java # Sample chunks endpoint
+│   └── ConfluenceController.java        # Confluence page content endpoint
+├── config/
+│   ├── ConfluenceProperties.java        # Confluence configuration properties
+│   └── ConfluenceConfig.java            # RestTemplate bean configuration
 ├── converter/
 │   └── EmbeddingConverter.java           # List<Float> <-> TEXT for embeddings
+├── util/
+│   └── ConfluenceClient.java            # Confluence REST API client
 ├── service/
-│   └── ConfluencePageChunkService.java   # Business logic for chunks
+│   ├── ConfluencePageChunkService.java   # Business logic for chunks
+│   └── ConfluenceService.java           # Confluence page fetching service
 ├── repository/
 │   └── ConfluencePageChunkRepository.java # JPA repository interface
 └── model/
@@ -175,4 +212,4 @@ src/main/java/com/example/knowledge/RAGassistant/
 
 ---
 
-*Last updated: After Step 5 completion*
+*Last updated: After Step 6 completion*
