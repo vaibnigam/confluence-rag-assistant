@@ -53,6 +53,37 @@ public class OpenAIClient {
         throw new RuntimeException("Failed to get embedding from OpenAI");
     }
 
+    public String chat(String systemPrompt, String userMessage) {
+        String url = properties.getBaseUrl() + "/chat/completions";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + properties.getApiKey());
+        headers.set("Content-Type", "application/json");
+
+        Map<String, Object> message1 = Map.of("role", "system", "content", systemPrompt);
+        Map<String, Object> message2 = Map.of("role", "user", "content", userMessage);
+        Map<String, Object> requestBody = Map.of(
+                "model", properties.getChatModel(),
+                "messages", List.of(message1, message2),
+                "temperature", 0.7
+        );
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
+        ResponseEntity<ChatResponse> response = restTemplate.exchange(
+                url,
+                HttpMethod.POST,
+                entity,
+                ChatResponse.class
+        );
+
+        if (response.getBody() != null && !response.getBody().getChoices().isEmpty()) {
+            return response.getBody().getChoices().get(0).getMessage().getContent();
+        }
+
+        throw new RuntimeException("Failed to get chat completion from OpenAI");
+    }
+
     @Data
     private static class EmbeddingResponse {
         private List<EmbeddingData> data;
@@ -62,5 +93,20 @@ public class OpenAIClient {
     private static class EmbeddingData {
         @JsonProperty("embedding")
         private List<Float> embedding;
+    }
+
+    @Data
+    private static class ChatResponse {
+        private List<Choice> choices;
+    }
+
+    @Data
+    private static class Choice {
+        private Message message;
+    }
+
+    @Data
+    private static class Message {
+        private String content;
     }
 }

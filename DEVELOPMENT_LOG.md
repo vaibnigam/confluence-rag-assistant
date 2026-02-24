@@ -212,12 +212,64 @@ Set these environment variables or update `application.properties`:
 
 ---
 
-## Next Steps (Planned)
+### Step 8: RAG Query Endpoint ✅
 
-### Step 8: RAG Query Endpoint
-- Implement similarity search using pgvector
-- Create RAG service that retrieves relevant chunks and generates answers
-- Add question-answering REST endpoint
+**Goal:** Implement the complete RAG flow: given a question, embed it, retrieve the most similar chunks using similarity search, construct a prompt with context, and generate an answer using OpenAI chat completion.
+
+**What was added:**
+- `QuestionRequest` (model layer): DTO with `question` field
+- `AnswerResponse` (model layer): DTO with `answer` and `sourceChunkIds` fields
+- `SimilaritySearch` (util layer): Utility class that:
+  - Calculates cosine similarity between two embedding vectors
+  - Finds top K chunks by similarity to a query embedding
+- `RetrievalService` (service layer): Retrieves relevant chunks by:
+  - Loading all chunks from database
+  - Using `SimilaritySearch` to find top K most similar chunks to question embedding
+- `RagService` (service layer): Orchestrates the full RAG flow:
+  - Embeds the question using `OpenAIClient`
+  - Retrieves top 3 relevant chunks using `RetrievalService`
+  - Builds context string from chunk contents
+  - Constructs system and user prompts
+  - Calls OpenAI chat completion API via `OpenAIClient.chat()`
+  - Returns `AnswerResponse` with answer and source chunk IDs
+- `RagController` (controller layer): `POST /rag/answer` endpoint that:
+  - Accepts `QuestionRequest` JSON
+  - Delegates to `RagService.answerQuestion()`
+  - Returns `AnswerResponse` JSON
+- `OpenAIClient`: Added `chat()` method for chat completions API
+
+**Files created:**
+- `src/main/java/com/example/knowledge/RAGassistant/model/QuestionRequest.java`
+- `src/main/java/com/example/knowledge/RAGassistant/model/AnswerResponse.java`
+- `src/main/java/com/example/knowledge/RAGassistant/util/SimilaritySearch.java`
+- `src/main/java/com/example/knowledge/RAGassistant/service/RetrievalService.java`
+- `src/main/java/com/example/knowledge/RAGassistant/service/RagService.java`
+- `src/main/java/com/example/knowledge/RAGassistant/controller/RagController.java`
+- `src/main/java/com/example/knowledge/RAGassistant/util/OpenAIClient.java` (added chat method)
+
+**Test:**
+1. Ensure ingestion has been run (`POST /ingest`) to populate chunks
+2. `POST http://localhost:8080/rag/answer` with JSON body:
+   ```json
+   {
+     "question": "What is this document about?"
+   }
+   ```
+3. Returns JSON with `answer` and `sourceChunkIds` array
+
+**Note:** Currently uses cosine similarity in Java since embeddings are stored as TEXT. Can be upgraded to pgvector for better performance in production.
+
+---
+
+## Project Complete! ✅
+
+All planned steps have been implemented. The RAG system is now fully functional:
+- ✅ Confluence integration (fetch pages)
+- ✅ OpenAI integration (embeddings + chat)
+- ✅ Text chunking
+- ✅ Ingestion pipeline (fetch → chunk → embed → store)
+- ✅ Similarity search
+- ✅ Question-answering API
 
 ---
 
@@ -230,7 +282,8 @@ src/main/java/com/example/knowledge/RAGassistant/
 │   ├── HealthController.java             # Health check endpoint
 │   ├── ConfluencePageChunkController.java # Sample chunks endpoint
 │   ├── ConfluenceController.java        # Confluence page content endpoint
-│   └── IngestionController.java         # Ingestion endpoint
+│   ├── IngestionController.java         # Ingestion endpoint
+│   └── RagController.java               # RAG question-answering endpoint
 ├── config/
 │   ├── ConfluenceProperties.java        # Confluence configuration properties
 │   ├── ConfluenceConfig.java            # RestTemplate bean configuration
@@ -240,16 +293,21 @@ src/main/java/com/example/knowledge/RAGassistant/
 │   └── EmbeddingConverter.java           # List<Float> <-> TEXT for embeddings
 ├── util/
 │   ├── ConfluenceClient.java            # Confluence REST API client
-│   ├── OpenAIClient.java                # OpenAI embeddings API client
-│   └── TextChunker.java                 # Text chunking utility
+│   ├── OpenAIClient.java                # OpenAI embeddings + chat API client
+│   ├── TextChunker.java                 # Text chunking utility
+│   └── SimilaritySearch.java           # Cosine similarity search utility
 ├── service/
 │   ├── ConfluencePageChunkService.java   # Business logic for chunks
 │   ├── ConfluenceService.java           # Confluence page fetching service
-│   └── IngestionService.java            # Ingestion orchestration service
+│   ├── IngestionService.java            # Ingestion orchestration service
+│   ├── RetrievalService.java           # Similarity search service
+│   └── RagService.java                 # RAG orchestration service
 ├── repository/
 │   └── ConfluencePageChunkRepository.java # JPA repository interface
 └── model/
-    └── ConfluencePageChunk.java          # Domain entity (JPA-ready)
+    ├── ConfluencePageChunk.java          # Domain entity (JPA-ready)
+    ├── QuestionRequest.java              # Question DTO
+    └── AnswerResponse.java               # Answer DTO
 ```
 
 ---
@@ -263,4 +321,4 @@ src/main/java/com/example/knowledge/RAGassistant/
 
 ---
 
-*Last updated: After Step 7 completion*
+*Last updated: After Step 8 completion - Project Complete!*

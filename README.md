@@ -17,3 +17,26 @@ An internal knowledge assistant built with Spring Boot that fetches Confluence p
    - Health: `GET http://localhost:8080/health`
    - Confluence page: `GET http://localhost:8080/confluence/page`
    - Ingest page: `POST http://localhost:8080/ingest` (fetches, chunks, embeds, and stores Confluence content)
+   - Ask question: `POST http://localhost:8080/rag/answer` with JSON body: `{"question": "your question"}`
+
+## Usage Flow
+
+1. **Ingest content:** `POST /ingest` - Fetches Confluence page, chunks it, generates embeddings, stores in database
+2. **Ask questions:** `POST /rag/answer` - Asks a question, retrieves relevant chunks, generates contextual answer
+
+## Example Request
+
+```bash
+curl -X POST http://localhost:8080/rag/answer \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What is this document about?"}'
+```
+
+## Example Response
+
+```json
+{
+  "answer": "This document is about...",
+  "sourceChunkIds": ["uuid1", "uuid2", "uuid3"]
+}
+```
