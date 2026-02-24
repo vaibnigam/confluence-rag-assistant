@@ -26,7 +26,7 @@ public class ConfluenceClient {
 
     public String fetchPageContent() {
         String url = UriComponentsBuilder
-                .fromHttpUrl(properties.getBaseUrl())
+                .fromUriString(properties.getBaseUrl())
                 .path("/rest/api/content/{pageId}")
                 .queryParam("expand", "body.storage,version")
                 .buildAndExpand(properties.getPageId())
