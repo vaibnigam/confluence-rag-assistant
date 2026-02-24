@@ -101,12 +101,33 @@ This document tracks the incremental development of the Confluence Knowledge Ass
 
 ---
 
-## Next Steps (Planned)
+### Step 5: Database Configuration ✅
 
-### Step 5: Database Configuration
-- Add PostgreSQL connection properties to `application.properties`
-- Configure database URL, username, password
-- Test database connectivity
+**Goal:** Wire the application to PostgreSQL so the app starts and JPA can create/update the `confluence_page_chunks` table.
+
+**What was added:**
+- Datasource and JPA properties in `application.properties`:
+  - `spring.datasource.url` (default: `jdbc:postgresql://localhost:5432/confluence_rag`)
+  - `spring.datasource.username` / `password` with placeholders (`${DB_USERNAME:postgres}`, `${DB_PASSWORD:postgres}`)
+  - `spring.jpa.hibernate.ddl-auto=update`, PostgreSQL dialect
+- `EmbeddingConverter` (converter layer): converts `List<Float>` to/from TEXT so embeddings can be stored without pgvector for now
+- `ConfluencePageChunk.embedding` now uses `@Convert(converter = EmbeddingConverter.class)` and `columnDefinition = "TEXT"` (pgvector can be added in a later step)
+
+**Files created/modified:**
+- `src/main/resources/application.properties` (datasource + JPA settings)
+- `src/main/java/com/example/knowledge/RAGassistant/converter/EmbeddingConverter.java`
+- `src/main/java/com/example/knowledge/RAGassistant/model/ConfluencePageChunk.java` (embedding column and converter)
+
+**How to run locally:**
+1. Create a PostgreSQL database, e.g. `createdb confluence_rag`
+2. Set (or use defaults) `DB_USERNAME` and `DB_PASSWORD` if needed
+3. Run `mvn spring-boot:run`
+
+**Test:** App starts without missing DataSource; table `confluence_page_chunks` is created/updated.
+
+---
+
+## Next Steps (Planned)
 
 ### Step 6: Minimal Confluence Integration
 - Add Confluence REST API client
@@ -133,6 +154,8 @@ src/main/java/com/example/knowledge/RAGassistant/
 ├── controller/
 │   ├── HealthController.java             # Health check endpoint
 │   └── ConfluencePageChunkController.java # Sample chunks endpoint
+├── converter/
+│   └── EmbeddingConverter.java           # List<Float> <-> TEXT for embeddings
 ├── service/
 │   └── ConfluencePageChunkService.java   # Business logic for chunks
 ├── repository/
@@ -152,4 +175,4 @@ src/main/java/com/example/knowledge/RAGassistant/
 
 ---
 
-*Last updated: After Step 4 completion*
+*Last updated: After Step 5 completion*

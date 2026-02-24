@@ -1,5 +1,6 @@
 package com.example.knowledge.RAGassistant.model;
 
+import com.example.knowledge.RAGassistant.converter.EmbeddingConverter;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -25,7 +26,8 @@ public class ConfluencePageChunk {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @Column(columnDefinition = "vector")
+    @Column(columnDefinition = "TEXT")
+    @Convert(converter = EmbeddingConverter.class)
     private List<Float> embedding;
 
     @Column(nullable = false, updatable = false)
