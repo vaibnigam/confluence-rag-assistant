@@ -8,4 +8,5 @@ import java.util.UUID;
 
 @Repository
 public interface ConfluencePageChunkRepository extends JpaRepository<ConfluencePageChunk, UUID> {
+    void deleteByPageId(String pageId);
 }

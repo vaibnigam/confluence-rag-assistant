@@ -10,7 +10,10 @@ An internal knowledge assistant built with Spring Boot that fetches Confluence p
    - `CONFLUENCE_PAGE_ID` - The Confluence page ID to fetch
    - `CONFLUENCE_USERNAME` - Your Confluence username/email
    - `CONFLUENCE_API_TOKEN` - Create at https://id.atlassian.com/manage-profile/security/api-tokens
-4. **Run:** `mvn spring-boot:run`
-5. **Check:** 
+4. **OpenAI:** Set environment variable:
+   - `OPENAI_API_KEY` - Your OpenAI API key (required for embeddings)
+5. **Run:** `mvn spring-boot:run` (or `.\mvnw.cmd spring-boot:run` on Windows)
+6. **Endpoints:** 
    - Health: `GET http://localhost:8080/health`
    - Confluence page: `GET http://localhost:8080/confluence/page`
+   - Ingest page: `POST http://localhost:8080/ingest` (fetches, chunks, embeds, and stores Confluence content)

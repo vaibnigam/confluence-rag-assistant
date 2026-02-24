@@ -162,12 +162,57 @@ Set these environment variables or update `application.properties`:
 
 ---
 
-## Next Steps (Planned)
+### Step 7: OpenAI Integration & Embeddings ✅
 
-### Step 7: OpenAI Integration & Embeddings
-- Add OpenAI client for embeddings
-- Implement text chunking utility
-- Create ingestion service to fetch, chunk, embed, and store Confluence content
+**Goal:** Integrate with OpenAI for embeddings, implement text chunking, and create an ingestion pipeline that fetches Confluence content, chunks it, generates embeddings, and stores chunks in the database.
+
+**What was added:**
+- `OpenAIProperties` (config layer): `@ConfigurationProperties(prefix = "openai")` for API key, base URL, embedding model, and chat model
+- `OpenAIConfig` (config layer): Provides dedicated `RestTemplate` bean for OpenAI API calls with longer timeouts
+- `OpenAIClient` (util layer): REST API client that:
+  - Calls OpenAI embeddings API (`/embeddings`)
+  - Takes text input and returns `List<Float>` embedding vector
+  - Uses Bearer token authentication
+- `TextChunker` (util layer): Utility class that:
+  - Splits large text into smaller chunks (default: 1000 chars with 200 char overlap)
+  - Tries to break at sentence boundaries when possible
+  - Returns list of text chunks
+- `IngestionService` (service layer): Orchestrates the full ingestion pipeline:
+  - Fetches page content from Confluence
+  - Chunks the content using `TextChunker`
+  - Deletes existing chunks for the page
+  - For each chunk: calls OpenAI to get embedding, creates `ConfluencePageChunk` entity, saves to database
+  - Returns `IngestionResult` with counts of saved/total chunks
+- `IngestionController` (controller layer): `POST /ingest` endpoint that triggers ingestion
+- `ConfluencePageChunkRepository`: Added `deleteByPageId()` method
+- OpenAI properties in `application.properties` with placeholders for environment variables
+
+**Files created:**
+- `src/main/java/com/example/knowledge/RAGassistant/config/OpenAIProperties.java`
+- `src/main/java/com/example/knowledge/RAGassistant/config/OpenAIConfig.java`
+- `src/main/java/com/example/knowledge/RAGassistant/util/OpenAIClient.java`
+- `src/main/java/com/example/knowledge/RAGassistant/util/TextChunker.java`
+- `src/main/java/com/example/knowledge/RAGassistant/service/IngestionService.java`
+- `src/main/java/com/example/knowledge/RAGassistant/controller/IngestionController.java`
+- `src/main/resources/application.properties` (added openai.* properties)
+- `src/main/java/com/example/knowledge/RAGassistant/repository/ConfluencePageChunkRepository.java` (added deleteByPageId method)
+
+**Configuration:**
+Set these environment variables or update `application.properties`:
+- `OPENAI_API_KEY` - Your OpenAI API key (required)
+- `OPENAI_BASE_URL` - Optional, defaults to `https://api.openai.com/v1`
+- `OPENAI_EMBEDDING_MODEL` - Optional, defaults to `text-embedding-3-small`
+- `OPENAI_CHAT_MODEL` - Optional, defaults to `gpt-3.5-turbo` (for future use)
+
+**Test:** 
+1. Ensure Confluence and OpenAI credentials are configured
+2. `POST http://localhost:8080/ingest` triggers ingestion
+3. Returns JSON with `savedChunks` and `totalChunks` counts
+4. Check database: `confluence_page_chunks` table should contain chunks with embeddings
+
+---
+
+## Next Steps (Planned)
 
 ### Step 8: RAG Query Endpoint
 - Implement similarity search using pgvector
@@ -184,17 +229,23 @@ src/main/java/com/example/knowledge/RAGassistant/
 ├── controller/
 │   ├── HealthController.java             # Health check endpoint
 │   ├── ConfluencePageChunkController.java # Sample chunks endpoint
-│   └── ConfluenceController.java        # Confluence page content endpoint
+│   ├── ConfluenceController.java        # Confluence page content endpoint
+│   └── IngestionController.java         # Ingestion endpoint
 ├── config/
 │   ├── ConfluenceProperties.java        # Confluence configuration properties
-│   └── ConfluenceConfig.java            # RestTemplate bean configuration
+│   ├── ConfluenceConfig.java            # RestTemplate bean configuration
+│   ├── OpenAIProperties.java           # OpenAI configuration properties
+│   └── OpenAIConfig.java                # OpenAI RestTemplate bean configuration
 ├── converter/
 │   └── EmbeddingConverter.java           # List<Float> <-> TEXT for embeddings
 ├── util/
-│   └── ConfluenceClient.java            # Confluence REST API client
+│   ├── ConfluenceClient.java            # Confluence REST API client
+│   ├── OpenAIClient.java                # OpenAI embeddings API client
+│   └── TextChunker.java                 # Text chunking utility
 ├── service/
 │   ├── ConfluencePageChunkService.java   # Business logic for chunks
-│   └── ConfluenceService.java           # Confluence page fetching service
+│   ├── ConfluenceService.java           # Confluence page fetching service
+│   └── IngestionService.java            # Ingestion orchestration service
 ├── repository/
 │   └── ConfluencePageChunkRepository.java # JPA repository interface
 └── model/
@@ -212,4 +263,4 @@ src/main/java/com/example/knowledge/RAGassistant/
 
 ---
 
-*Last updated: After Step 6 completion*
+*Last updated: After Step 7 completion*
